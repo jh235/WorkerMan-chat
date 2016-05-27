@@ -18,7 +18,7 @@ class Db
         'port'    => 3307,
         'user'    => 'root',
         'password' => '123456',
-        'dbname'  => 'ams',
+        'dbname'  => 'test',
         'charset'    => 'utf8',
     );
 }

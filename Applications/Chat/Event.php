@@ -31,15 +31,13 @@ class Event
    public static function onMessage($client_id, $message)
    {
 
-        $ret = Db::instance('db1')->select('*')->from('members')->query();
-        // 打印结果
-        var_dump($ret);
-        // 
         // debug
         echo "client:{$_SERVER['REMOTE_ADDR']}:{$_SERVER['REMOTE_PORT']} gateway:{$_SERVER['GATEWAY_ADDR']}:{$_SERVER['GATEWAY_PORT']}  client_id:$client_id session:".json_encode($_SESSION)." onMessage:".$message."\n";
         
         // 客户端传递的是json数据
         $message_data = json_decode($message, true);
+
+        // var_dump($message_data);
         if(!$message_data)
         {
             return ;
@@ -51,6 +49,31 @@ class Event
             // 客户端回应服务端的心跳
             case 'pong':
                 return;
+
+            //注册
+            case 'register':
+                if(!isset($message_data['user_name']) || !isset($message_data['password'])){
+                   
+                    throw new \Exception("\$message_data['user_name'] or \$message_data['password'] not set. client_ip:{$_SERVER['REMOTE_ADDR']} \$message:$message");
+                }
+
+                $user_name = $message_data['user_name'];
+                $userID = self::getUserID();
+                $password = $message_data['password'];
+                $email = $message_data['email'];
+                $group = $message_data['group'];
+
+                $insert_id = Db::instance('db1')->insert('users')->cols(array('username'=>$user_name, 'userID'=>$userID, 'email'=>$email, 'password'=>$password,'joined'=>date('Y-m-d H:i:s'), 'group' =>$group))->query();
+
+                // var_dump($insert_id);
+
+                $_SESSION['userID'] = $userID;
+                $_SESSION['user_name'] =  $user_name;
+             
+
+                return;
+               
+
             // 客户端登录 message格式: {type:login, name:xx, room_id:1} ，添加到客户端，广播给所有客户端xx进入聊天室
             case 'login':
                 // 判断是否有房间号
@@ -138,5 +161,84 @@ class Event
            Gateway::sendToGroup($room_id, json_encode($new_message));
        }
    }
-  
+
+   public static function generate_license($start = 0, $end = 0, $num = 10)
+   {
+        $license_list = array();
+
+        $i = 1;
+        $retry = 100;
+
+        while ($i <= $num) {
+            $tmp_num = self::is_better_id(mt_rand($start, $end));
+            if ($tmp_num) {
+                $license_list[$i] = $tmp_num;
+                $i++;
+            } else {
+                $retry--;
+            }
+            if ($retry <= 0) {
+                break;
+            }
+        }
+        return $license_list;
+    }
+
+    public static function is_better_id($license_id = '')
+    {
+        if (!$license_id) {
+            return 0;
+        }
+        if (strlen($license_id) < 6) {
+            $license_id = str_pad($license_id, 6, '0', STR_PAD_LEFT);
+        }
+        $better_list = array(
+            '111', '222', '333', '444', '555', '666', '777', '888', '999', '000', 
+            '123', '234', '345', '456', '567', '678', '789',
+            '321', '432', '543', '654', '765', '876', '987',
+            '520', '521'
+        );
+        $number_list  = array();
+        $start        = 0;
+        $is_better_id = false;
+        $end          = strlen($license_id);
+
+        while ($start < $end) {
+            $tmp_num = substr($license_id, $start, 3);
+            if (strlen($tmp_num) == 3) {
+                $number_list[] = $tmp_num;
+            }
+            $start += 3;
+        }
+        foreach($number_list as $k => $v) {
+            if (in_array($v, $better_list)) {
+                $is_better_id = true;
+                break;
+            }
+        }
+        if ($is_better_id) {
+            return 0;
+        } else {
+            return $license_id;
+        }
+    }
+
+
+    public static function getUserID(){
+
+        $i = 100000;
+
+        $ret = Db::instance('db1')->single("SELECT MAX(userID) FROM users");
+
+        // var_dump($ret);
+
+        if ($ret < $i) {
+            // echo "string";
+            return $i;
+           
+        }
+            return ++$ret ;
+             
+        
+    }
 }

@@ -41,10 +41,18 @@
         {
             show_prompt();
         }
+        // 注册
+        var register_data = '{"type":"register","user_name":"jiang","password":"123456","email":"jh235@qq.com","group":"<?php echo isset($_GET['room_id']) ? $_GET['room_id'] : 1?>"}';
+
+        console.log("websocket握手成功，发送注册数据:"+register_data);
+        // var_dump(register_data);
+        ws.send(register_data);
+
+
         // 登录
-        var login_data = '{"type":"login","client_name":"'+name.replace(/"/g, '\\"')+'","room_id":"<?php echo isset($_GET['room_id']) ? $_GET['room_id'] : 1?>"}';
-        console.log("websocket握手成功，发送登录数据:"+login_data);
-        ws.send(login_data);
+        // var login_data = '{"type":"login","client_name":"'+name.replace(/"/g, '\\"')+'","room_id":"<?php echo isset($_GET['room_id']) ? $_GET['room_id'] : 1?>"}';
+        // console.log("websocket握手成功，发送登录数据:"+login_data);
+        // ws.send(login_data);
     }
 
     // 服务端发来消息时
